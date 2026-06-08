@@ -12,6 +12,7 @@
 #include <fstream>
 #include <mutex>
 #include <random>
+#include <set>
 #include <string>
 
 /**
@@ -183,9 +184,9 @@ ImageList::add(const std::vector<std::filesystem::path>& sources)
 }
 
 std::list<ImageEntryPtr>
-ImageList::remove(const std::vector<std::filesystem::path>& sources)
+ImageList::remove(const std::vector<std::filesystem::path>& entry_paths)
 {
-    if (sources.empty()) {
+    if (entry_paths.empty()) {
         return {};
     }
 
@@ -196,8 +197,9 @@ ImageList::remove(const std::vector<std::filesystem::path>& sources)
     }
 
     std::list<ImageEntryPtr> removed;
+    std::set<size_t> removed_indexes;
 
-    for (const auto& path : sources) {
+    for (const auto& path : entry_paths) {
         // get absolute path
         std::filesystem::path abs_path;
         if (ImageEntry::is_special(path)) {
@@ -217,16 +219,37 @@ ImageList::remove(const std::vector<std::filesystem::path>& sources)
             const ImageEntryPtr entry = it->second;
             entry->removed = true;
             entries_map.erase(it);
-            entries_arr[entry->index] = nullptr;
             removed.emplace_back(entry);
+            removed_indexes.insert(entry->index);
         }
     }
 
-    if (!removed.empty()) {
-        std::erase_if(entries_arr, [](const ImageEntryPtr& entry) {
-            return !entry;
-        });
-        reindex();
+    if (removed.size() == 1) {
+        entries_arr.erase(entries_arr.begin() + removed.front()->index);
+        reindex(removed.front()->index);
+    } else if (!removed.empty()) {
+        if (entries_map.empty()) {
+            entries_arr.clear();
+            return removed;
+        }
+
+        // shift and reindex - move the entries directly to their new position
+        removed_indexes.insert(entries_arr.size());
+        auto it = removed_indexes.begin();
+        const auto end = removed_indexes.end();
+        size_t from = *it;
+        size_t to = from;
+
+        while (++it != end) {
+            from = from + 1;
+
+            for (const size_t next = *it; from < next; ++from, ++to) {
+                entries_arr[to] = entries_arr[from];
+                entries_arr[to]->index = to;
+            }
+        }
+        entries_arr.erase(entries_arr.begin() + entries_map.size(),
+                          entries_arr.end());
     }
 
     return removed;

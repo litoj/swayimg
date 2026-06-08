@@ -59,11 +59,11 @@ public:
 
     /**
      * Remove all given paths from the list.
-     * @param sources entries paths to remove
+     * @param entry_paths entry paths to remove
      * @return list of removed entries
      */
     std::list<ImageEntryPtr>
-    remove(const std::vector<std::filesystem::path>& sources);
+    remove(const std::vector<std::filesystem::path>& entry_paths);
 
     /**
      * Remove image entry from the list.
