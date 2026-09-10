@@ -222,7 +222,19 @@ void Text::reset(const ImagePtr& image)
 
 void Text::reset(const ImageEntryPtr& entry)
 {
-    assert(entry);
+    if (!entry) {
+        // clear only once to avoid redrawing the status message on every change
+        const auto& found = fields.find(FIELD_LIST_TOTAL);
+        const std::wstring def = to_wide("0");
+        if (found == fields.end() || found->second != def) {
+            fields.clear();
+            set_field(FIELD_LIST_INDEX, def);
+            set_field(FIELD_LIST_TOTAL, def);
+            update();
+            set_status("Image list is empty");
+        }
+        return;
+    }
 
     fields.clear();
 
