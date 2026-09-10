@@ -205,7 +205,18 @@ void Text::reset(const ImagePtr& image)
 
 void Text::reset(const ImageEntryPtr& entry)
 {
-    assert(entry);
+    if (!entry) {
+        // clear only once to avoid redrawing the status message on every change
+        const auto& found = fields.find(FIELD_LIST_TOTAL);
+        if (found == fields.end() || found->second != "0") {
+            fields.clear();
+            set_field(FIELD_LIST_INDEX, "0");
+            set_field(FIELD_LIST_TOTAL, "0");
+            update();
+            set_status("Image list is empty");
+        }
+        return;
+    }
 
     fields.clear();
 
