@@ -157,13 +157,7 @@ void AppMode::switch_current()
     ui->set_title(title.c_str());
 
     // update text layer
-    Text& text = Text::self();
-    if (entry) {
-        text.reset(entry);
-    } else {
-        text.clear();
-        text.set_status("Image list is empty");
-    }
+    Text::self().reset(entry);
 
     if (on_image_change) {
         on_image_change();
